@@ -24,27 +24,25 @@ class DroneChatBot:
         text = text.lower()
 
         if text in ["bye", "exit", "quit"]:
+            st.session_state.phase = "end"
             return "👋 Goodbye! Thanks for chatting."
 
-        # Greeting phase answer
-        if text not in ("y", "n") and st.session_state.phase == "greeting":
-            return "❌ Invalid choice.\n📞 Company Helpline: **+1-800-555-1234**"
+        # Greeting phase: expect y/n
+        if st.session_state.phase == "greeting":
+            if text == "y":
+                st.session_state.phase = "chat"
+                return (
+                    "Great! You can ask about:\n"
+                    "- flight time\n- range\n- gps\n- camera\n- camera removable\n"
+                    "- payload\n- speed\n- weather\n- fpv\n- in the box"
+                )
+            elif text == "n":
+                st.session_state.phase = "end"
+                return "Alright! Have a great day! 👋"
+            else:
+                return "❌ Invalid choice.\n📞 Company Helpline: **+1-800-555-1234**"
 
-        # User said No
-        if text == "n":
-            st.session_state.phase = "end"
-            return "Alright! Have a great day! 👋"
-
-        # Switch to question phase
-        if text == "y":
-            st.session_state.phase = "chat"
-            return (
-                "Great! You can ask about:\n"
-                "- flight time\n- range\n- gps\n- camera\n- camera removable\n"
-                "- payload\n- speed\n- weather\n- fpv\n- in the box"
-            )
-
-        # Chat phase: look for matching keywords
+        # Chat phase: respond to keywords
         if st.session_state.phase == "chat":
             for key, ans in self.answers.items():
                 if key in text:
@@ -59,42 +57,43 @@ class DroneChatBot:
 
 st.title("🚁 AeroBot – Drone FAQ Chatbot")
 
-# Keep chat history
+# Setup session state
 if "history" not in st.session_state:
     st.session_state.history = []
 if "phase" not in st.session_state:
-    st.session_state.phase = "greeting"   # greeting → chat → end
+    st.session_state.phase = "greeting"
+if "input_value" not in st.session_state:
+    st.session_state.input_value = ""
 
 bot = DroneChatBot()
 
-# Initial greeting message (only once)
+# Initial greeting
 if st.session_state.phase == "greeting" and len(st.session_state.history) == 0:
-    greeting_text = (
-        f"Hello, I am {bot.name}. Would you like to ask me a question about the drone?\n"
+    st.session_state.history.append((
+        "bot",
+        "Hello, I am AeroBot. Would you like to ask me a question about the drone?\n"
         "👉 Enter **y** for Yes\n"
         "👉 Enter **n** for No"
-    )
-    st.session_state.history.append(("bot", greeting_text))
+    ))
 
-# Display chat history
+# Display previous messages
 for sender, msg in st.session_state.history:
     if sender == "bot":
         st.markdown(f"**🤖 AeroBot:** {msg}")
     else:
         st.markdown(f"**🧑 You:** {msg}")
 
-# Input box
-user_input = st.text_input("You:")
+# Input box with controlled state
+user_input = st.text_input("You:", key="input_box", value=st.session_state.input_value)
 
-if user_input:
-    # Save user message
+# When user presses enter
+if user_input.strip() != "":
     st.session_state.history.append(("user", user_input))
-
-    # Get bot response
     response = bot.get_response(user_input)
-
-    # Save bot response
     st.session_state.history.append(("bot", response))
 
-    # Force Streamlit to rerun (to show updated chat)
+    # CLEAR the input so it doesn't trigger again
+    st.session_state.input_value = ""
+    st.session_state.input_box = ""
+
     st.rerun()
