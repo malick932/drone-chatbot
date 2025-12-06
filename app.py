@@ -64,6 +64,8 @@ if "history" not in st.session_state:
     st.session_state.history = []
 if "phase" not in st.session_state:
     st.session_state.phase = "greeting"
+if "input_box" not in st.session_state:
+    st.session_state.input_box = ""
 
 bot = DroneChatBot()
 
@@ -83,18 +85,27 @@ for sender, msg in st.session_state.history:
     else:
         st.markdown(f"**🧑 You:** {msg}")
 
-# Input box using unique session key
-user_input = st.text_input("You:", key="input_box")
 
-# When user submits text
-if user_input.strip():
-    st.session_state.history.append(("user", user_input))
+# ------- INPUT HANDLER (callback) -------
+def handle_input():
+    user_text = st.session_state.input_box.strip()
+    if not user_text:
+        return
+
+    # Add user message
+    st.session_state.history.append(("user", user_text))
 
     # Get chatbot response
-    response = bot.get_response(user_input)
+    response = bot.get_response(user_text)
     st.session_state.history.append(("bot", response))
 
-    # Clear input box safely
+    # Clear the input box
     st.session_state.input_box = ""
 
-    st.rerun()
+
+# Text input with callback
+st.text_input(
+    "You:",
+    key="input_box",
+    on_change=handle_input,
+)
