@@ -48,7 +48,7 @@ class DroneChatBot:
             for key, ans in self.answers.items():
                 if key in text:
                     return ans
-            return "❗ Please ask about drone specs."
+            return "❗I'm sorry, I don't have an answer for that question. For further assistance, please contact our helpline at 111-111-143."
 
         return "I didn't understand that."
 
