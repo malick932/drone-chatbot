@@ -23,11 +23,12 @@ class DroneChatBot:
     def get_response(self, text):
         text = text.lower()
 
+        # Exit conditions
         if text in ["bye", "exit", "quit"]:
             st.session_state.phase = "end"
             return "👋 Goodbye! Thanks for chatting."
 
-        # Greeting phase: expect y/n
+        # Greeting phase
         if st.session_state.phase == "greeting":
             if text == "y":
                 st.session_state.phase = "chat"
@@ -42,7 +43,7 @@ class DroneChatBot:
             else:
                 return "❌ Invalid choice.\n📞 Company Helpline: **+1-800-555-1234**"
 
-        # Chat phase: respond to keywords
+        # Chat phase
         if st.session_state.phase == "chat":
             for key, ans in self.answers.items():
                 if key in text:
@@ -51,13 +52,14 @@ class DroneChatBot:
 
         return "I didn't understand that."
 
+
 # -------------------------------
 # Streamlit UI
 # -------------------------------
 
 st.title("🚁 AeroBot – Drone FAQ Chatbot")
 
-# Setup session state
+# Session state initialization
 if "history" not in st.session_state:
     st.session_state.history = []
 if "phase" not in st.session_state:
@@ -76,24 +78,25 @@ if st.session_state.phase == "greeting" and len(st.session_state.history) == 0:
         "👉 Enter **n** for No"
     ))
 
-# Display previous messages
+# Display chat history
 for sender, msg in st.session_state.history:
     if sender == "bot":
         st.markdown(f"**🤖 AeroBot:** {msg}")
     else:
         st.markdown(f"**🧑 You:** {msg}")
 
-# Input box with controlled state
-user_input = st.text_input("You:", key="input_box", value=st.session_state.input_value)
+# Text input with a single state key
+user_input = st.text_input("You:", key="input_value")
 
-# When user presses enter
+# When the user types something
 if user_input.strip() != "":
     st.session_state.history.append(("user", user_input))
+
+    # Get bot answer
     response = bot.get_response(user_input)
     st.session_state.history.append(("bot", response))
 
-    # CLEAR the input so it doesn't trigger again
+    # CLEAR the input to prevent repeated triggers
     st.session_state.input_value = ""
-    st.session_state.input_box = ""
 
     st.rerun()
