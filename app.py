@@ -1,20 +1,12 @@
 import streamlit as st
 
-# ----------------------------------------
-# Drone Chatbot Classes (same logic as yours)
-# ----------------------------------------
+# -------------------------------
+# Drone Chatbot Logic
+# -------------------------------
 
-class Greeting:
-    def __init__(self, name):
-        self.name = name
-
-class ChatBot(Greeting):
-    def __init__(self, name):
-        super().__init__(name)
-
-class DroneChatBot(ChatBot):
-    def __init__(self, name):
-        super().__init__(name)
+class DroneChatBot:
+    def __init__(self):
+        self.name = "AeroBot"
         self.answers = {
             "flight time": "28-32 minutes per battery (depends on wind & payload).",
             "range": "6-8 kilometers with clear line of sight.",
@@ -30,31 +22,79 @@ class DroneChatBot(ChatBot):
 
     def get_response(self, text):
         text = text.lower()
-        for key, ans in self.answers.items():
-            if key in text:
-                return ans
-        return "❗ Please ask about drone specs (flight time, range, GPS, camera, payload, etc.)."
 
-    def suggestions(self):
-        return list(self.answers.keys())
+        if text in ["bye", "exit", "quit"]:
+            return "👋 Goodbye! Thanks for chatting."
 
+        # Greeting phase answer
+        if text not in ("y", "n") and st.session_state.phase == "greeting":
+            return "❌ Invalid choice.\n📞 Company Helpline: **+1-800-555-1234**"
 
-# ----------------------------------------
+        # User said No
+        if text == "n":
+            st.session_state.phase = "end"
+            return "Alright! Have a great day! 👋"
+
+        # Switch to question phase
+        if text == "y":
+            st.session_state.phase = "chat"
+            return (
+                "Great! You can ask about:\n"
+                "- flight time\n- range\n- gps\n- camera\n- camera removable\n"
+                "- payload\n- speed\n- weather\n- fpv\n- in the box"
+            )
+
+        # Chat phase: look for matching keywords
+        if st.session_state.phase == "chat":
+            for key, ans in self.answers.items():
+                if key in text:
+                    return ans
+            return "❗ Please ask about drone specs."
+
+        return "I didn't understand that."
+
+# -------------------------------
 # Streamlit UI
-# ----------------------------------------
-
-bot = DroneChatBot("AeroBot")
+# -------------------------------
 
 st.title("🚁 AeroBot – Drone FAQ Chatbot")
-st.write("Ask me anything about this drone.")
 
-st.markdown("### **Suggestions:**")
-for s in bot.suggestions():
-    st.markdown(f"- **{s}**")
+# Keep chat history
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "phase" not in st.session_state:
+    st.session_state.phase = "greeting"   # greeting → chat → end
 
-# Chat input
+bot = DroneChatBot()
+
+# Initial greeting message (only once)
+if st.session_state.phase == "greeting" and len(st.session_state.history) == 0:
+    greeting_text = (
+        f"Hello, I am {bot.name}. Would you like to ask me a question about the drone?\n"
+        "👉 Enter **y** for Yes\n"
+        "👉 Enter **n** for No"
+    )
+    st.session_state.history.append(("bot", greeting_text))
+
+# Display chat history
+for sender, msg in st.session_state.history:
+    if sender == "bot":
+        st.markdown(f"**🤖 AeroBot:** {msg}")
+    else:
+        st.markdown(f"**🧑 You:** {msg}")
+
+# Input box
 user_input = st.text_input("You:")
 
 if user_input:
+    # Save user message
+    st.session_state.history.append(("user", user_input))
+
+    # Get bot response
     response = bot.get_response(user_input)
-    st.markdown(f"### 🤖 Bot: {response}")
+
+    # Save bot response
+    st.session_state.history.append(("bot", response))
+
+    # Force Streamlit to rerun (to show updated chat)
+    st.rerun()
